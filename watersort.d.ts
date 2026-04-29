@@ -1,4 +1,4 @@
-import { PromptModule, PWASkeleton, Toplevel } from "./boilerplate";
+import { PromptModule, Toplevel } from "./boilerplate";
 
 export type WaterSortApp = Toplevel<{
   prompt: "Write a Water Sort PWA. Use the APIs of the provided modules to compose the software";
@@ -180,3 +180,20 @@ type StateModule = PromptModule<{
   };
   modules: [LogicModule, SolverModule, AchievementsModule, CareerModule, MultiplayerModule];
 }>;
+
+type PWASkeleton = `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="manifest" href="manifest.webmanifest" />
+  </head>
+  <body>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js");
+      }
+    </script>
+  </body>
+</html>
+`;

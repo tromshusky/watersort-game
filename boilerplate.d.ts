@@ -16,19 +16,3 @@ type ToplevelConfig = {
 };
 
 export type Toplevel<T extends ToplevelConfig> = T;
-export type PWASkeleton = `
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <link rel="manifest" href="manifest.webmanifest" />
-  </head>
-  <body>
-    <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("sw.js");
-      }
-    </script>
-  </body>
-</html>
-`;
