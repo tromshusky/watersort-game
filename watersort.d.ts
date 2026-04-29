@@ -1,7 +1,7 @@
 import { PromptModule, Toplevel } from "./boilerplate";
 
 export type WaterSortApp = Toplevel<{
-  prompt: "Build a modular game PWA. Use the APIs of the provided modules to compose the software.";
+  prompt: "Build a Water sort game as a serverless PWA. Use the APIs of the provided modules to compose the software.";
   targetLanguage: "html";
   skeleton: PWASkeleton;
   modules: [
@@ -64,7 +64,12 @@ type UICareerModule = PromptModule<{
 }>;
 
 type UIMultiplayerModule = PromptModule<{
-  prompt: "Implement a UI layer for a multiplayer or competitive mode. It should render the mode’s interface, show match/join links, and display results. Use only the APIs of GameviewUIModule and MultiplayerModule.";
+  prompt: `
+  Implement a UI layer for a multiplayer or competitive mode. It should render the mode’s interface, show match/join links, and display results.
+  Use only the APIs of the listed modules.
+  
+  A multiplayer match link can be generated via button and is set with a starttime 20 seconds in the future.
+  It should provide different options for game duration 1min, 3min, 5min, 10min, and different difficulties`;
   api: {
     renderMultiplayerScreen: () => void;
     showMatchURL: (url: string) => void;
@@ -74,7 +79,7 @@ type UIMultiplayerModule = PromptModule<{
 }>;
 
 type HelpMeModule = PromptModule<{
-  prompt: "Implement a helper/assist module. It should generate a shareable link that allows another player to assist, and apply an externally provided solution. Use only the APIs of StateModule and SolverModule.";
+  prompt: "Implement a helper/assist module. It should generate a shareable link that allows another player to assist, and apply an externally provided solution. Use only the APIs of the listed modules.";
   api: {
     getHelpFromFriendLink: () => string;
     applyFriendSolution: (hash: string) => boolean;
@@ -83,7 +88,7 @@ type HelpMeModule = PromptModule<{
 }>;
 
 type UIModule = PromptModule<{
-  prompt: "Implement the root UI controller. It initializes the UI, determines which mode is active, and delegates rendering to the appropriate sub‑UI modules. Use only the APIs of the listed UI modules and GameModesModule.";
+  prompt: "Implement the root UI controller. It initializes the UI, determines which mode is active, and delegates rendering to the appropriate sub‑UI modules. Use only the APIs of the listed modules.";
   api: {
     init: () => void;
     renderCurrentMode: () => void;
@@ -122,7 +127,10 @@ type AchievementsModule = PromptModule<{
     listAll: () => Achievement[];
     checkUnlocks: (state: AppState) => string[];
   };
-  types: { Achievement: Achievement };
+  types: {
+    Achievement: Achievement;
+    AmountAllAchievements: 100;
+  };
 }>;
 
 type CareerModule = PromptModule<{
@@ -147,7 +155,9 @@ type MultiplayerModule = PromptModule<{
     parseMatchURL: (url: string) => { seed: string; startTimestamp: number; durationMinutes: number };
     evaluateResult: (moves: number, timeMs: number) => MultiplayerResult;
   };
-  types: { MultiplayerResult: MultiplayerResult };
+  types: {
+    MultiplayerResult: MultiplayerResult;
+  };
 }>;
 
 type GameModesModule = PromptModule<{
