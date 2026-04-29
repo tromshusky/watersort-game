@@ -163,6 +163,7 @@ type GameModesModule = PromptModule<{
 
 type StateModule = PromptModule<{
   prompt: "";
+  stateful: true;
   api: {
     getState: () => AppState;
     setState: (newState: AppState) => void;

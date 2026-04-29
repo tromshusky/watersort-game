@@ -3,6 +3,7 @@ type PromptModuleConfig = {
   api?: Record<string, any>;
   types?: Record<string, any>;
   modules?: PromptModule<any>[];
+  stateful?: boolean;
 };
 
 export type PromptModule<T extends PromptModuleConfig> = T;
