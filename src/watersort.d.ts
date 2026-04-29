@@ -1,21 +1,22 @@
 import { PromptModule, Toplevel } from "./boilerplate";
 
 export type WaterSortApp = Toplevel<{
-  prompt: "Build a Water sort game as a serverless PWA. Use the APIs of the provided modules to compose the software.";
+  prompt: "Build a Water sort game as a serverless PWA.";
   targetLanguage: "html";
   skeleton: PWASkeleton;
   modules: [
     UIModule,
-    StateModule,
+    StateModule
   ];
 }>;
-
 
 type Color = string;
 
 type Bottle = { capacity: number; contents: Color[] };
 type PuzzleState = { bottles: Bottle[] };
 type Move = { from: number; to: number };
+
+type Difficulty = "easy" | "medium" | "hard";
 
 type Achievement = {
   id: string;
@@ -28,67 +29,109 @@ type MultiplayerResult = {
   completedLevels: number;
 };
 
+type MultiplayerMatchStatus = "pending" | "active" | "finished";
+
+type MultiplayerMatchConfig = {
+  durationMinutes: 1 | 3 | 5 | 10;
+  difficulty: Difficulty;
+};
+
+type MultiplayerMatchInfo = {
+  url: string;
+  seed: string;
+  startTimestamp: number;
+  durationMinutes: number;
+  difficulty: Difficulty;
+  status: MultiplayerMatchStatus;
+};
+
+type GameMode = "career" | "multiplayer";
+
 type AppState = {
   puzzleState: PuzzleState;
+  moveHistory: Move[];
+  currentSeed?: string;
+  currentDifficulty: Difficulty;
   achievements: Record<string, boolean>;
   career: {
     levelIndex: number;
     unlockedAchievements: string[];
   };
   multiplayer: {
-    matches: any[];
+    matches: MultiplayerMatchInfo[];
+    currentMatch?: MultiplayerMatchInfo;
     results: MultiplayerResult[];
   };
-  currentMode: "career" | "multiplayer";
+  currentMode: GameMode;
 };
 
-
 type GameviewUIModule = PromptModule<{
-  prompt: "Implement a generic game‑view UI layer. It should render the current game state, bind user interactions, and display a solved/completed state. Use only the APIs of the StateModule.";
+  prompt: "Render the puzzle, bind interactions, and provide reset and undo controls.";
   api: {
     renderPuzzle: () => void;
     bindInteractions: () => void;
+    bindReset: () => void;
+    bindUndo: () => void;
     showSolved: () => void;
   };
-  modules: [StateModule];
+  modules: [GameControllerModule];
 }>;
 
 type UICareerModule = PromptModule<{
-  prompt: "Implement a UI layer for a progression‑based game mode. It should render the mode’s interface, show progress, and display earned achievements. Use only the APIs of GameviewUIModule, CareerModule, and AchievementsModule.";
+  prompt: "Render the career mode interface, progress, and achievements.";
   api: {
     renderCareermodeUI: () => void;
     showProgress: () => void;
     showAchievements: () => void;
   };
-  modules: [GameviewUIModule, CareerModule, AchievementsModule];
+  modules: [GameviewUIModule, CareerModule, AchievementsModule, GameControllerModule];
+}>;
+
+type UIMultiplayerSettingsModule = PromptModule<{
+  prompt: "Render multiplayer configuration options and trigger match creation.";
+  api: {
+    renderSettings: () => void;
+    onCreateMatchRequested: () => void;
+  };
+  modules: [MultiplayerModule, GameControllerModule];
+}>;
+
+type UIMultiplayerLoadingModule = PromptModule<{
+  prompt: "Render a waiting screen for multiplayer matches and update countdown.";
+  api: {
+    renderLoadingScreen: () => void;
+    updateCountdown: () => void;
+  };
+  modules: [GameControllerModule];
 }>;
 
 type UIMultiplayerModule = PromptModule<{
-  prompt: `
-  Implement a UI layer for a multiplayer or competitive mode. It should render the mode’s interface, show match/join links, and display results.
-  Use only the APIs of the listed modules.
-  
-  A multiplayer match link can be generated via button and is set with a starttime 20 seconds in the future.
-  It should provide different options for game duration 1min, 3min, 5min, 10min, and different difficulties`;
+  prompt: "Render multiplayer mode, show match links, and display results.";
   api: {
     renderMultiplayerScreen: () => void;
     showMatchURL: (url: string) => void;
     showResults: (results: MultiplayerResult[]) => void;
   };
-  modules: [GameviewUIModule, MultiplayerModule];
+  modules: [
+    GameviewUIModule,
+    MultiplayerModule,
+    GameControllerModule,
+    UIMultiplayerSettingsModule,
+    UIMultiplayerLoadingModule
+  ];
 }>;
 
 type HelpMeModule = PromptModule<{
-  prompt: "Implement a helper/assist module. It should generate a shareable link that allows another player to assist, and apply an externally provided solution. Use only the APIs of the listed modules.";
+  prompt: "Generate a helper link and apply an externally provided solution.";
   api: {
     getHelpFromFriendLink: () => string;
     applyFriendSolution: (hash: string) => boolean;
   };
-  modules: [StateModule, SolverModule];
+  modules: [GameControllerModule, SolverModule];
 }>;
 
 type UIModule = PromptModule<{
-  prompt: "Implement the root UI controller. It initializes the UI, determines which mode is active, and delegates rendering to the appropriate sub‑UI modules. Use only the APIs of the listed modules.";
+  prompt: "Initialize the UI and delegate rendering to the active mode.";
   api: {
     init: () => void;
     renderCurrentMode: () => void;
@@ -102,19 +145,18 @@ type UIModule = PromptModule<{
   ];
 }>;
 
-
 type LogicModule = PromptModule<{
-  prompt: "Implement the core game logic. It should generate new game states, apply player actions, and determine whether the game is completed. Use only the provided types.";
+  prompt: "Generate deterministic levels, apply moves, and detect solved states.";
   api: {
-    generateLevel: (difficulty: number) => PuzzleState;
+    generateLevel: (difficulty: Difficulty, seed?: string) => PuzzleState;
     applyMove: (state: PuzzleState, move: Move) => PuzzleState;
     isSolved: (state: PuzzleState) => boolean;
   };
-  types: { Bottle: Bottle; GameState: PuzzleState; Move: Move };
+  types: { Bottle: Bottle; GameState: PuzzleState; Move: Move; Difficulty: Difficulty };
 }>;
 
 type SolverModule = PromptModule<{
-  prompt: "Implement a solver for the game. Given a game state, compute a sequence of actions that leads to a completed/solved state. Use only the provided types.";
+  prompt: "Compute a sequence of moves that solves a puzzle.";
   api: {
     solve: (state: PuzzleState) => Move[];
   };
@@ -122,7 +164,7 @@ type SolverModule = PromptModule<{
 }>;
 
 type AchievementsModule = PromptModule<{
-  prompt: "Implement a generic achievements system. It should list all achievements and determine which ones unlock based on the current application state.";
+  prompt: "List achievements and determine which unlock based on state.";
   api: {
     listAll: () => Achievement[];
     checkUnlocks: (state: AppState) => string[];
@@ -130,11 +172,12 @@ type AchievementsModule = PromptModule<{
   types: {
     Achievement: Achievement;
     AmountAllAchievements: 100;
+    AppState: AppState;
   };
 }>;
 
 type CareerModule = PromptModule<{
-  prompt: "Implement a progression system for a long‑term game mode. It should compute the next stage, evaluate progress, and determine which achievements unlock after completing a level or challenge. Use only the AchievementsModule API.";
+  prompt: "Compute next career level, progress, and achievement unlocks.";
   api: {
     computeNextLevel: (currentLevel: number) => number;
     computeProgress: (state: AppState) => {
@@ -142,53 +185,72 @@ type CareerModule = PromptModule<{
       unlockedAchievements: string[];
     };
     evaluateCompletion: (timeMs: number, moves: number) => {
-      achievementsToUnlock: string[];
+      achievementIdsToUnlock: string[];
     };
   };
   modules: [AchievementsModule];
 }>;
 
 type MultiplayerModule = PromptModule<{
-  prompt: "Implement multiplayer/competitive logic. It should create and parse match URLs or tokens, and evaluate results for competitive scoring. Use only the provided types.";
+  prompt: "Create and parse deterministic multiplayer match URLs and evaluate results.";
   api: {
-    createMatchURL: (seed: string, startTimestamp: number, durationMinutes: number) => string;
-    parseMatchURL: (url: string) => { seed: string; startTimestamp: number; durationMinutes: number };
-    evaluateResult: (moves: number, timeMs: number) => MultiplayerResult;
+    createMatchURL: (seed: string, startTimestamp: number, durationMinutes: number, difficulty: Difficulty) => string;
+    parseMatchURL: (url: string) => { seed: string; startTimestamp: number; durationMinutes: number; difficulty: Difficulty };
+    evaluateResult: (playerName: string, moves: number, timeMs: number) => MultiplayerResult;
   };
   types: {
     MultiplayerResult: MultiplayerResult;
+    Difficulty: Difficulty;
   };
 }>;
 
 type GameModesModule = PromptModule<{
-  prompt: "Implement a mode manager for switching between different game modes. It should list available modes, allow switching, and report the currently active mode. Use only the StateModule API.";
+  prompt: "Manage available modes and switch between them.";
   api: {
-    getAvailableModes: () => ("career" | "multiplayer")[];
-    setMode: (mode: "career" | "multiplayer") => void;
-    getCurrentMode: () => "career" | "multiplayer";
+    getAvailableModes: () => GameMode[];
+    setMode: (mode: GameMode) => void;
+    getCurrentMode: () => GameMode;
   };
   modules: [StateModule];
 }>;
 
+type GameControllerModule = PromptModule<{
+  prompt: "Coordinate logic and state: start games, apply moves, undo, reset, solve, and manage multiplayer matches.";
+  api: {
+    getCurrentPuzzle: () => PuzzleState;
+    startCareerLevel: (levelIndex: number, difficulty: Difficulty) => PuzzleState;
+    startNextCareerLevel: () => PuzzleState;
+    startNewMultiplayerMatch: (config: MultiplayerMatchConfig) => MultiplayerMatchInfo;
+    joinMultiplayerMatchFromURL: (url: string) => MultiplayerMatchInfo;
+    applyMoveToCurrentPuzzle: (move: Move) => { state: PuzzleState; solved: boolean };
+    undoLastMove: () => PuzzleState;
+    resetCurrentPuzzle: () => PuzzleState;
+    isCurrentPuzzleSolved: () => boolean;
+    solveCurrentPuzzle: () => Move[];
+    getMoveHistory: () => Move[];
+    getCurrentMatchInfo: () => MultiplayerMatchInfo | undefined;
+  };
+  modules: [StateModule, LogicModule, SolverModule, MultiplayerModule, CareerModule, AchievementsModule];
+}>;
 
 type StateModule = PromptModule<{
-  prompt: "Implement the central state manager. It stores the full application state, provides methods to update it, and exposes helpers for creating new games, applying actions, checking completion, and invoking the solver. Use only the APIs of LogicModule, SolverModule, AchievementsModule, CareerModule, and MultiplayerModule.";
+  prompt: "Store and retrieve application state without implementing game logic.";
   stateful: true;
   api: {
     getState: () => AppState;
     setState: (newState: AppState) => void;
-
-    newGame: (difficulty: number) => PuzzleState;
-    applyMove: (move: Move) => PuzzleState;
-    isSolved: () => boolean;
-    solveCurrent: () => Move[];
+    updateState: (updater: (prev: AppState) => AppState) => void;
+    initializeDefaultState: () => void;
   };
   types: {
     AppState: AppState;
     PuzzleState: PuzzleState;
     Move: Move;
+    Difficulty: Difficulty;
+    GameMode: GameMode;
+    MultiplayerMatchInfo: MultiplayerMatchInfo;
   };
-  modules: [LogicModule, SolverModule, AchievementsModule, CareerModule, MultiplayerModule];
+  modules: [];
 }>;
 
 type PWASkeleton = `
